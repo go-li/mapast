@@ -641,7 +641,7 @@ func Dump(print func(string), ast map[uint64][]byte, iterator uint64, pad int) b
 		print("")
 	}
 	for i := uint64(0); true; i++ {
-		if !Dump(print, ast, o(iterator)+i, pad+1) {
+		if !Dump(print, ast, O(iterator)+i, pad+1) {
 			return true
 		}
 	}
@@ -657,7 +657,7 @@ func PrintCode(ast map[uint64][]byte, iterator uint64, parent uint64) {
 // Code generates go source code from an abstract syntax tree.
 func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uint64) {
 	const uint64big = ^uint64(0) - 1
-	var ast_o_iterator = string(ast[o(iterator)])
+	var ast_o_iterator = string(ast[O(iterator)])
 	if ast[iterator] != nil {
 		switch &(ast[iterator])[0] {
 		case &CommentRow[0]:
@@ -674,7 +674,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				print("import ")
 			}
 			print(ast_o_iterator)
-			another := string(ast[o(iterator)+1])
+			another := string(ast[O(iterator)+1])
 			if len(another) > 0 {
 				print(" ")
 				print(another)
@@ -752,13 +752,13 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 		case &StructType[0]:
 			print("struct{")
-			if ast[o(iterator)] != nil {
+			if ast[O(iterator)] != nil {
 				print("")
 			}
 
 		case &IfceTypExp[0]:
 			print("interface{")
-			if ast[o(iterator)] != nil {
+			if ast[O(iterator)] != nil {
 				print("")
 			}
 
@@ -858,8 +858,8 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 		case &VarDefStmt[0]:
 			var op = byte(len(ast[(iterator)]) - 1)
-			var multi = len(ast[o(iterator)+1]) > 0
-			var none = len(ast[o(iterator)]) == 0
+			var multi = len(ast[O(iterator)+1]) > 0
+			var none = len(ast[O(iterator)]) == 0
 			switch op {
 			case VarDefStmtVar:
 				print("var ")
@@ -891,7 +891,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 		case &ClosureExp[0]:
 			print("func(")
-			var end = ast[o(iterator)] == nil || &ast[o(iterator)][0] == &BlocOfCode[0]
+			var end = ast[O(iterator)] == nil || &ast[O(iterator)][0] == &BlocOfCode[0]
 			var separ = uint64(len(ast[(iterator)]) - 1)
 			if separ == 0 {
 				print(")(")
@@ -901,7 +901,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			}
 
 		case &TypedIdent[0]:
-			if ast[o(iterator)+1] == nil || &ast[o(iterator)+1][0] != &RootOfType[0] {
+			if ast[O(iterator)+1] == nil || &ast[O(iterator)+1][0] != &RootOfType[0] {
 				var op = byte(len(ast[(iterator)]) - 1)
 				switch op {
 				case TypedIdentEllipsis:
@@ -913,8 +913,8 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 		}
 	}
 	for i := uint64(0); i < uint64big; i++ {
-		if Poke(ast, o(iterator)+i) {
-			Code(print, ast, o(iterator)+i, iterator)
+		if Poke(ast, O(iterator)+i) {
+			Code(print, ast, O(iterator)+i, iterator)
 		} else {
 			i = uint64big
 		}
@@ -927,8 +927,8 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				}
 
 			case &ToplevFunc[0]:
-				var alpha = ast[o(iterator)+i] == nil || &ast[o(iterator)+i][0] == &BlocOfCode[0]
-				var beta = ast[o(iterator)+i+1] == nil || &ast[o(iterator)+i+1][0] == &BlocOfCode[0]
+				var alpha = ast[O(iterator)+i] == nil || &ast[O(iterator)+i][0] == &BlocOfCode[0]
+				var beta = ast[O(iterator)+i+1] == nil || &ast[O(iterator)+i+1][0] == &BlocOfCode[0]
 				var gamma = cap(ast[(iterator)]) == len(ast[(iterator)])
 				var epsil = len(ast[(iterator)])-1 != 0
 				var omega = i != uint64big
@@ -968,12 +968,12 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				}
 
 			case &TypedIdent[0]:
-				if ast[o(iterator)+i] != nil && &ast[o(iterator)+i][0] != &RootOfType[0] {
-					if ast[o(iterator)+i-1] != nil && &ast[o(iterator)+i-1][0] == &RootOfType[0] {
+				if ast[O(iterator)+i] != nil && &ast[O(iterator)+i][0] != &RootOfType[0] {
+					if ast[O(iterator)+i-1] != nil && &ast[O(iterator)+i-1][0] == &RootOfType[0] {
 						print(" ")
 					}
-					print(string(ast[o(iterator)+i]))
-					if ast[o(iterator)+i+1] != nil && &ast[o(iterator)+i+1][0] != &RootOfType[0] {
+					print(string(ast[O(iterator)+i]))
+					if ast[O(iterator)+i+1] != nil && &ast[O(iterator)+i+1][0] != &RootOfType[0] {
 						print(", ")
 					} else {
 						var op = byte(len(ast[(iterator)]) - 1)
@@ -1045,9 +1045,9 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				var blockheader = true
 				var op = byte(len(ast[(iterator)]) - 1)
 				var l = uint64(cap(ast[(iterator)]) - int(ExpressionTotalCount))
-				if Which(ast[o(iterator)+i]) == nil {
-					if len(ast[o(iterator)+i]) > 0 {
-						print(string(ast[o(iterator)+i]))
+				if Which(ast[O(iterator)+i]) == nil {
+					if len(ast[O(iterator)+i]) > 0 {
+						print(string(ast[O(iterator)+i]))
 					}
 				}
 				if i != uint64big {
@@ -1222,13 +1222,13 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				}
 
 			case &ReturnStmt[0]:
-				if i != uint64big && ast[o(iterator)+i+1] != nil {
+				if i != uint64big && ast[O(iterator)+i+1] != nil {
 					print(", ")
 				}
 
 			case &IncDecStmt[0]:
 				if i == 0 {
-					if Which(ast[o(iterator)]) == nil {
+					if Which(ast[O(iterator)]) == nil {
 						if len(ast_o_iterator) > 0 {
 							print(ast_o_iterator)
 						}
@@ -1250,9 +1250,9 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				var blockheader = true
 				var op = byte(len(ast[(iterator)]) - 1)
 				var l = uint64(cap(ast[(iterator)]) - int(AssignStmtTotalCount))
-				if Which(ast[o(iterator)+i]) == nil {
-					if len(string(ast[o(iterator)+i])) > 0 {
-						print(string(ast[o(iterator)+i]))
+				if Which(ast[O(iterator)+i]) == nil {
+					if len(string(ast[O(iterator)+i])) > 0 {
+						print(string(ast[O(iterator)+i]))
 					}
 				}
 				if i != uint64big {
@@ -1348,7 +1348,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				}
 
 			case &RootOfType[0]:
-				if i == uint64big && Which(ast[o(iterator)]) == nil {
+				if i == uint64big && Which(ast[O(iterator)]) == nil {
 					if len(ast_o_iterator) > 0 {
 						print(ast_o_iterator)
 					}
@@ -1376,13 +1376,13 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 			case &VarDefStmt[0]:
 				if i != uint64big {
-					if len(ast[o(iterator)+i]) != 0 {
-						if len(ast[o(iterator)+i+1]) != 0 {
+					if len(ast[O(iterator)+i]) != 0 {
+						if len(ast[O(iterator)+i+1]) != 0 {
 							print("")
 						}
 					}
-					if len(ast[o(iterator)+i-1]) != 0 {
-						if len(ast[o(iterator)+i+1]) == 0 {
+					if len(ast[O(iterator)+i-1]) != 0 {
+						if len(ast[O(iterator)+i+1]) == 0 {
 							print("")
 							print(")")
 							print("")
@@ -1397,8 +1397,8 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 			case &ClosureExp[0]:
 				if i != uint64big {
-					var end = ast[o(iterator)+i+1] == nil || &ast[o(iterator)+i+1][0] == &BlocOfCode[0]
-					var xyz = ast[o(iterator)+i+0] == nil || &ast[o(iterator)+i+0][0] == &BlocOfCode[0]
+					var end = ast[O(iterator)+i+1] == nil || &ast[O(iterator)+i+1][0] == &BlocOfCode[0]
+					var xyz = ast[O(iterator)+i+0] == nil || &ast[O(iterator)+i+0][0] == &BlocOfCode[0]
 					if end {
 						if !xyz {
 							print(")")
@@ -1415,7 +1415,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 			case &IfceMethod[0]:
 				if i == 0 {
-					var end = ast[o(iterator)+i+1] == nil
+					var end = ast[O(iterator)+i+1] == nil
 					if end {
 						print("()")
 					} else {
@@ -1426,7 +1426,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 						print("(")
 					}
 				} else if i != uint64big {
-					var end = ast[o(iterator)+i+1] == nil
+					var end = ast[O(iterator)+i+1] == nil
 					if end {
 						print(")")
 					} else {
