@@ -35,7 +35,7 @@ func main() {
 		os.Exit(4)
 	}
 	asttree := make(map[uint64][]byte)
-	ast.Walk(convert.NewConversion(asttree, 0), file)
+	ast.Walk(convert.NewConversion(asttree, 0, content), file)
 	if false {
 		mapast.Dump(Printer, asttree, 0, 0)
 		fmt.Println("---------------------------------------------------------")

@@ -252,12 +252,16 @@ func coolcomment(n string) bool {
 }
 
 // NewConversion creates a new conversion for a source file. Whichfile is the
-// number of file to be translated. If you don't need multiple files in the map,
-// use zero.
-func NewConversion(asttree map[uint64][]byte, whichfile uint64) *Conversion {
+// number of file to be translated, starting from zero. File is the slice
+// filled with the source code, used to scan for comments info.
+func NewConversion(asttree map[uint64][]byte, whichfile uint64, file []byte) *Conversion {
+	ender := make(map[int]struct{})
+	separ := make(map[int]struct{})
+	var endersepar = [2]map[int]struct{}{ender, separ}
+	mapast.LookupComments(file, endersepar)
 	asttree[0] = mapast.RootMatter
 	asttree[o(0)+whichfile] = mapast.FileMatter
-	return &Conversion{AstTree: asttree, MyFile: o(0)}
+	return &Conversion{AstTree: asttree, MyFile: o(0), EnderSepared: endersepar, Comments1: true}
 }
 
 // Conversion holds the state of translation of a single file. Please put your
