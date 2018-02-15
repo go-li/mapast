@@ -1408,7 +1408,14 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			case &FileMatter[0]:
 				if i != uint64big {
 					var xyz = ast[O(iterator)+i+1] == nil || &ast[O(iterator)+i+1][0] == &CommentRow[0]
-					if !xyz || len(ast[O(iterator)+i+1])-1 != int(CommentRowEnder) {
+					var abc = ast[O(iterator)+i+0] != nil && &ast[O(iterator)+i+0][0] == &CommentRow[0]
+					var def = ast[O(iterator)+i+1] != nil && &ast[O(iterator)+i+1][0] == &CommentRow[0]
+					var end = len(ast[O(iterator)+i+1])-1 == int(CommentRowEnder)
+					var ene = len(ast[O(iterator)+i+0])-1 == int(CommentRowEnder)
+					if !xyz || !end {
+						print("")
+					}
+					if abc && def && end && ene {
 						print("")
 					}
 				}
