@@ -474,6 +474,15 @@ const TypDefStmtNormal byte = 0
 // TypDefStmtAlias contains alias declaration.
 const TypDefStmtAlias byte = 1
 
+// CommentRowEnder is a comment starting at the end of a previous element line.
+const CommentRowEnder byte = 0
+
+// CommentRowNormal is a comment occupying it's own row.
+const CommentRowNormal byte = 1
+
+// CommentRowSeparate is a comment following an empty line(s).
+const CommentRowSeparate byte = 2
+
 // O is an one way function. Given a node key it calculates the key of its first
 // child node. The other keys of child nodes follow by adding 1, 2, 3... to
 // the result.
@@ -661,6 +670,11 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 	if ast[iterator] != nil {
 		switch &(ast[iterator])[0] {
 		case &CommentRow[0]:
+
+			if len(ast[(iterator)])-1 == int(CommentRowSeparate) {
+				print("")
+			}
+
 			print(ast_o_iterator)
 
 		case &PackageDef[0]:
@@ -1392,7 +1406,12 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 
 			case &FileMatter[0]:
 				if i != uint64big {
-					print("")
+					var xyz = ast[O(iterator)+i+1] == nil || &ast[O(iterator)+i+1][0] == &CommentRow[0]
+
+					if !xyz || len(ast[O(iterator)+i+1])-1 != int(CommentRowEnder) {
+
+						print("")
+					}
 				}
 
 			case &ClosureExp[0]:
