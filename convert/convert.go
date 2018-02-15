@@ -1,4 +1,5 @@
 // Package convert helps to convert go/ast to mapast
+
 package convert
 
 import (
@@ -256,7 +257,6 @@ func coolcomment(n string) bool {
 func NewConversion(asttree map[uint64][]byte, whichfile uint64) *Conversion {
 	asttree[0] = mapast.RootMatter
 	asttree[o(0)+whichfile] = mapast.FileMatter
-
 	return &Conversion{AstTree: asttree, MyFile: o(0)}
 }
 
@@ -318,7 +318,6 @@ func fetchvariant(n int) byte {
 func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	switch x.(type) {
 	case *ast.File:
-
 		var xx = (x).(*ast.File)
 		var imp = int(xx.Package)
 		if len(xx.Imports) > 0 {
@@ -330,45 +329,36 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			for j := range xx.Comments[i].List {
 				var ctext = xx.Comments[i].List[j].Text
 				var sl = int(xx.Comments[i].List[j].Slash)
-
 				var ender bool
 				var separ bool
-
 				if c.EnderSepared[0] != nil {
 					_, ender1 := c.EnderSepared[0][sl/2]
 					_, ender2 := c.EnderSepared[0][(sl+1)/2]
 					ender = ender1 || ender2
 				}
-
 				if c.EnderSepared[1] != nil {
 					_, separ1 := c.EnderSepared[1][sl/2]
 					_, separ2 := c.EnderSepared[1][(sl+1)/2]
 					separ = separ1 || separ2
 				}
-
 				var variant = mapast.CommentRowNormal
 				if ender {
 					variant = mapast.CommentRowEnder
 				} else if separ {
 					variant = mapast.CommentRowSeparate
 				}
-
 				var lhs = int(sl) - len(n)
 				if lhs-9 == int(pk) || lhs-8 == int(pk) {
-
 					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.PackageDef
 					c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(n)
 					pk = 0xffffff
 					c.importswhere++
-
 					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+variant]
 					c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(ctext)
 					c.importswhere++
-
 					continue
 				} else if sl > pk {
 					for k := range c.commentpos {
-
 						c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[k])]
 						c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[k])
 						c.importswhere++
@@ -3147,7 +3137,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		c.AstTree[t] = []byte("...")
 
 	default:
-	}
 
+	}
 	return c
 }

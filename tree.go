@@ -1,4 +1,5 @@
 // Package MapAST is an abstract syntax tree for the go language.
+
 package mapast
 
 // MaxSubnodes - The current limit of how many certain type subnodes can some
@@ -670,11 +671,9 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 	if ast[iterator] != nil {
 		switch &(ast[iterator])[0] {
 		case &CommentRow[0]:
-
 			if len(ast[(iterator)])-1 == int(CommentRowSeparate) {
 				print("")
 			}
-
 			print(ast_o_iterator)
 
 		case &PackageDef[0]:
@@ -683,9 +682,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			print(ast_o_iterator)
 
 		case &ImportStmt[0]:
-
 			var defparent = ast[(parent)] != nil && &ast[(parent)][0] == &ImportsDef[0]
-
 			if defparent {
 			} else {
 				print("import ")
@@ -1411,9 +1408,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			case &FileMatter[0]:
 				if i != uint64big {
 					var xyz = ast[O(iterator)+i+1] == nil || &ast[O(iterator)+i+1][0] == &CommentRow[0]
-
 					if !xyz || len(ast[O(iterator)+i+1])-1 != int(CommentRowEnder) {
-
 						print("")
 					}
 				}
