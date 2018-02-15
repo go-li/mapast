@@ -266,6 +266,8 @@ func NewConversion(asttree map[uint64][]byte, whichfile uint64) *Conversion {
 type Conversion struct {
 	AstTree            map[uint64][]byte
 	MyFile             uint64
+	EnderSepared       [2]map[int]struct{}
+	Comments1          bool
 	importswhere       uint64
 	nestedimports      uint64
 	structfield        [][2]uint64
@@ -291,11 +293,32 @@ type Conversion struct {
 	commentpos         []int
 }
 
+func packint(n int, ender bool, separ bool) int {
+	if ender {
+		n |= 1 << 29
+	}
+	if separ {
+		n |= 1 << 30
+	}
+	return n
+}
+
+func fetchvariant(n int) byte {
+	if n&(1<<29) != 0 {
+		return mapast.CommentRowEnder
+	}
+	if n&(1<<30) != 0 {
+		return mapast.CommentRowSeparate
+	}
+	return mapast.CommentRowNormal
+}
+
 // Visit is the main function used to translate go/ast to mapast. Visit is not
 // called directly, but instead the Conversion is passed to the ast.Walk call.
 func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	switch x.(type) {
 	case *ast.File:
+
 		var xx = (x).(*ast.File)
 		var imp = int(xx.Package)
 		if len(xx.Imports) > 0 {
@@ -307,6 +330,29 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			for j := range xx.Comments[i].List {
 				var ctext = xx.Comments[i].List[j].Text
 				var sl = int(xx.Comments[i].List[j].Slash)
+
+				var ender bool
+				var separ bool
+
+				if c.EnderSepared[0] != nil {
+					_, ender1 := c.EnderSepared[0][sl/2]
+					_, ender2 := c.EnderSepared[0][(sl+1)/2]
+					ender = ender1 || ender2
+				}
+
+				if c.EnderSepared[1] != nil {
+					_, separ1 := c.EnderSepared[1][sl/2]
+					_, separ2 := c.EnderSepared[1][(sl+1)/2]
+					separ = separ1 || separ2
+				}
+
+				var variant = mapast.CommentRowNormal
+				if ender {
+					variant = mapast.CommentRowEnder
+				} else if separ {
+					variant = mapast.CommentRowSeparate
+				}
+
 				var lhs = int(sl) - len(n)
 				if lhs-9 == int(pk) || lhs-8 == int(pk) {
 
@@ -315,14 +361,15 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 					pk = 0xffffff
 					c.importswhere++
 
-					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+mapast.CommentRowEnder]
+					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+variant]
 					c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(ctext)
 					c.importswhere++
 
 					continue
 				} else if sl > pk {
 					for k := range c.commentpos {
-						c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+mapast.CommentRowNormal]
+
+						c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[k])]
 						c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[k])
 						c.importswhere++
 					}
@@ -334,19 +381,12 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 					c.importswhere++
 				}
 				if sl < imp {
-
-					var variant = mapast.CommentRowNormal
-
-					if sl < pk && coolcomment(ctext) {
-						ctext = ctext + "\n"
-						variant = mapast.CommentRowSeparate
-					}
 					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+variant]
 					c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(ctext)
 					c.importswhere++
 				} else {
 					c.comments = append(c.comments, ctext)
-					c.commentpos = append(c.commentpos, sl)
+					c.commentpos = append(c.commentpos, packint(sl, ender, separ))
 				}
 			}
 		}
@@ -364,8 +404,8 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 
 	case *ast.GenDecl:
 		var xx = (x).(*ast.GenDecl)
-		for c.commentpos[0] < int(xx.TokPos) {
-			c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+mapast.CommentRowNormal]
+		for (c.commentpos[0] & 0xfffffff) < int(xx.TokPos) {
+			c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[0])]
 			c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[0])
 			c.importswhere++
 			c.commentpos = c.commentpos[1:]
@@ -473,9 +513,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 
 	case *ast.FuncDecl:
 		var xx = (x).(*ast.FuncDecl)
-		for c.commentpos[0] < int(xx.Type.Func) {
-			if coolcomment(c.comments[0]) {
-				c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+mapast.CommentRowNormal]
+		for (c.commentpos[0] & 0xfffffff) < int(xx.Type.Func) {
+			if coolcomment(c.comments[0]) || c.Comments1 {
+				c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[0])]
 				c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[0])
 				c.importswhere++
 			}
@@ -3107,7 +3147,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		c.AstTree[t] = []byte("...")
 
 	default:
-
 	}
+
 	return c
 }

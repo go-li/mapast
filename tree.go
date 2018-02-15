@@ -683,7 +683,10 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			print(ast_o_iterator)
 
 		case &ImportStmt[0]:
-			if ast[(parent)] != nil && &ast[(parent)][0] == &ImportsDef[0] {
+
+			var defparent = ast[(parent)] != nil && &ast[(parent)][0] == &ImportsDef[0]
+
+			if defparent {
 			} else {
 				print("import ")
 			}
@@ -693,7 +696,9 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				print(" ")
 				print(another)
 			}
-			print("")
+			if defparent {
+				print("")
+			}
 
 		case &ImportsDef[0]:
 			print("import (")
@@ -937,7 +942,6 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			case &ImportsDef[0]:
 				if i == uint64big {
 					print(")")
-					print("")
 				}
 
 			case &ToplevFunc[0]:
