@@ -1,3 +1,4 @@
+// Toyfmt program demonstrates abstract syntax tree conversion and printing
 package main
 
 import (

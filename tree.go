@@ -1,5 +1,4 @@
 // Package MapAST is an abstract syntax tree for the go language.
-
 package mapast
 
 // MaxSubnodes - The current limit of how many certain type subnodes can some
@@ -484,6 +483,12 @@ const CommentRowNormal byte = 1
 // CommentRowSeparate is a comment following an empty line(s).
 const CommentRowSeparate byte = 2
 
+// PackageDefNormal is a package statement not following an empty line(s).
+const PackageDefNormal byte = 0
+
+// PackageDefSeparate is a package statement separated by an empty line(s).
+const PackageDefSeparate byte = 1
+
 // O is an one way function. Given a node key it calculates the key of its first
 // child node. The other keys of child nodes follow by adding 1, 2, 3... to
 // the result.
@@ -499,7 +504,7 @@ func O(n uint64) uint64 {
 	return v
 }
 
-// The Poke function tests whether a given iterator key in a ast is occupied.
+// The Poke function tests whether a given iterator key in an ast is occupied.
 func Poke(ast map[uint64][]byte, iterator uint64) bool {
 	_, ok := ast[iterator]
 	return ok
@@ -677,7 +682,9 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 			print(ast_o_iterator)
 
 		case &PackageDef[0]:
-			print("")
+			if len(ast[(iterator)])-1 == int(PackageDefSeparate) {
+				print("")
+			}
 			print("package ")
 			print(ast_o_iterator)
 
