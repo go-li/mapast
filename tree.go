@@ -78,6 +78,9 @@ var IfceTypExp = []byte("IfceTypExp")
 // optional leading or trailing newlines.
 var CommentRow = []byte("CommentRow")
 
+// GenericExp is a generic type node. This node is reserved for future use.
+var GenericExp = []byte("GenericExp")
+
 // Expression node is one of the 38 differend kinds of Expression. It contains
 // strings, IfceTypExps, ClosureExps, StructTypes or more Expressions.
 var Expression = storage[0:]
@@ -562,6 +565,8 @@ func Which(node []byte) []byte {
 		return IfceMethod
 	} else if &node[0] == &CommentRow[0] {
 		return CommentRow
+	} else if &node[0] == &GenericExp[0] {
+		return GenericExp
 	}
 	return nil
 }
