@@ -860,19 +860,19 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 				case ExpressionComposed:
 					print("{")
 
+				case ExpressionSliceType:
+					print("[]")
+
 				}
 			} else {
 				switch op {
-				case ExpressionArrayType:
-					print("[]")
-
 				case ExpressionComposed:
 					print("{")
 					if l == 0 {
 						print("}")
 					}
 
-				case ExpressionSliceType:
+				case ExpressionArrayType:
 					print("[")
 
 				case ExpressionMap:
@@ -1182,7 +1182,7 @@ func Code(print func(string), ast map[uint64][]byte, iterator uint64, parent uin
 							case ExpressionMap:
 								fallthrough
 
-							case ExpressionSliceType:
+							case ExpressionArrayType:
 								print("]")
 
 							case ExpressionType:

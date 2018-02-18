@@ -2660,19 +2660,19 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		if len(c.typefield) == 0 {
 			break
 		}
+		var l uint64
 		var variant byte
 		if xx.Len == nil {
-			variant = mapast.ExpressionArrayType
-		} else {
+			l = 1
 			variant = mapast.ExpressionSliceType
+		} else {
+			l = 2
+			variant = mapast.ExpressionArrayType
 		}
 		id1, ok1 := xx.Len.(*ast.Ident)
 		var ident1 []byte
 		if ok1 {
 			ident1 = []byte(id1.Name)
-		}
-		if xx.Len == nil {
-			ok1 = true
 		}
 		id2, ok2 := xx.Elt.(*ast.Ident)
 		var ident2 []byte
@@ -2685,16 +2685,18 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
 		c.typefield = c.typefield[:len(c.typefield)-1]
-		c.AstTree[where] = mapast.ExpressionNode(variant, 2)
-		if ok1 {
-			c.AstTree[o(where)] = ident1
-		} else {
-			stack = append([]uint64{o(where)}, stack...)
+		c.AstTree[where] = mapast.ExpressionNode(variant, l)
+		if xx.Len != nil {
+			if ok1 {
+				c.AstTree[o(where)] = ident1
+			} else {
+				stack = append([]uint64{o(where)}, stack...)
+			}
 		}
 		if ok2 {
-			c.AstTree[o(where)+1] = ident2
+			c.AstTree[o(where)+l-1] = ident2
 		} else {
-			stack = append([]uint64{o(where) + 1}, stack...)
+			stack = append([]uint64{o(where) + l - 1}, stack...)
 		}
 		c.typefield = append(c.typefield, stack...)
 
