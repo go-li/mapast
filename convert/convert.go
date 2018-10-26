@@ -229,22 +229,22 @@ func how_many_subblocks_block(x *ast.BlockStmt) int {
 }
 
 func coolcomment(n string) bool {
-	if len(n) >= 9 && n[:9] == "// +build" {
+	if len(n) >= 9 && n[0:9] == "// +build" {
 		return true
 	}
-	if len(n) >= 5 && n[:5] == "//go:" {
+	if len(n) >= 5 && n[0:5] == "//go:" {
 		return true
 	}
-	if len(n) >= 6 && n[:6] == "//line" {
+	if len(n) >= 6 && n[0:6] == "//line" {
 		return true
 	}
-	if len(n) >= 8 && n[:8] == "//extern" {
+	if len(n) >= 8 && n[0:8] == "//extern" {
 		return true
 	}
-	if len(n) >= 9 && n[:9] == "// import" {
+	if len(n) >= 9 && n[0:9] == "// import" {
 		return true
 	}
-	if len(n) >= 8 && n[:8] == "//export" {
+	if len(n) >= 8 && n[0:8] == "//export" {
 		return true
 	}
 	return false
@@ -292,6 +292,7 @@ type Conversion struct {
 	deadsends          map[*ast.SendStmt]struct{}
 	deadincdecs        map[*ast.IncDecStmt]struct{}
 	deadexprs          map[*ast.ExprStmt]struct{}
+	typedcases         map[*ast.CaseClause]struct{}
 	comments           []string
 	commentpos         []int
 }
@@ -352,12 +353,12 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 				}
 				if sl > pk {
 					for k := range c.commentpos {
-						c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[k])]
+						c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[0 : 1+fetchvariant(c.commentpos[k])]
 						c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[k])
 						c.importswhere++
 					}
-					c.commentpos = c.commentpos[:0]
-					c.comments = c.comments[:0]
+					c.commentpos = c.commentpos[0:0]
+					c.comments = c.comments[0:0]
 					var separ bool
 					if c.EnderSepared[1] != nil {
 						_, separ1 := c.EnderSepared[1][pk/2]
@@ -368,13 +369,13 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 					if separ {
 						variant = mapast.PackageDefSeparate
 					}
-					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.PackageDef[:1+variant]
+					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.PackageDef[0 : 1+variant]
 					c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(n)
 					pk = 0xffffff
 					c.importswhere++
 				}
 				if sl < imp {
-					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+variant]
+					c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[0 : 1+variant]
 					c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(ctext)
 					c.importswhere++
 				} else {
@@ -394,7 +395,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			if separ {
 				variant = mapast.PackageDefSeparate
 			}
-			c.AstTree[o(c.MyFile)+c.importswhere] = mapast.PackageDef[:1+variant]
+			c.AstTree[o(c.MyFile)+c.importswhere] = mapast.PackageDef[0 : 1+variant]
 			c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(((x).(*ast.File)).Name.Name)
 			c.importswhere++
 		}
@@ -408,7 +409,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.GenDecl:
 		var xx = (x).(*ast.GenDecl)
 		for (c.commentpos[0] & 0xfffffff) < int(xx.TokPos) {
-			c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[0])]
+			c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[0 : 1+fetchvariant(c.commentpos[0])]
 			c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[0])
 			c.importswhere++
 			c.commentpos = c.commentpos[1:]
@@ -428,9 +429,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			var variant byte = bool2byte(xx.Tok == token.CONST)
 			_ = variant
 			for len(c.substmts) > 0 && len(c.subblocks) > 0 && c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-				c.substmts = c.substmts[:len(c.substmts)-1]
-				c.subblocks = c.subblocks[:len(c.subblocks)-1]
-				c.nowblock = c.nowblock[:len(c.nowblock)-1]
+				c.substmts = c.substmts[0 : len(c.substmts)-1]
+				c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+				c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 			}
 			if len(c.substmts) > 0 {
 				c.substmts[len(c.substmts)-1]--
@@ -471,10 +472,11 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 					if ok {
 						ident = []byte(id.Name)
 					}
+					c.AstTree[o(o(blk)+uint64(i))+names] = mapast.RootOfType
 					if ok {
-						c.AstTree[o(o(blk)+uint64(i))+names] = ident
+						c.AstTree[o(o(o(blk)+uint64(i))+names)] = ident
 					} else {
-						stack = append([]uint64{o(o(blk)+uint64(i)) + names}, stack...)
+						stack = append([]uint64{o(o(o(blk)+uint64(i)) + names)}, stack...)
 					}
 				}
 				for j := range xxx.Values {
@@ -518,7 +520,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		var xx = (x).(*ast.FuncDecl)
 		for (c.commentpos[0] & 0xfffffff) < int(xx.Type.Func) {
 			if coolcomment(c.comments[0]) || c.Comments1 {
-				c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[:1+fetchvariant(c.commentpos[0])]
+				c.AstTree[o(c.MyFile)+c.importswhere] = mapast.CommentRow[0 : 1+fetchvariant(c.commentpos[0])]
 				c.AstTree[o(o(c.MyFile)+c.importswhere)] = []byte(c.comments[0])
 				c.importswhere++
 			}
@@ -547,6 +549,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		c.deadsends = make(map[*ast.SendStmt]struct{})
 		c.deadincdecs = make(map[*ast.IncDecStmt]struct{})
 		c.deadexprs = make(map[*ast.ExprStmt]struct{})
+		c.typedcases = make(map[*ast.CaseClause]struct{})
 		if xx.Body != nil {
 			c.AstTree[o(where)+totalparams+1] = mapast.BlocOfCodeNode(mapast.BlocOfCodePlain, 0)
 			c.typefield = []uint64{}
@@ -560,9 +563,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.TypeSpec:
 		var xx = (x).(*ast.TypeSpec)
 		for len(c.substmts) > 0 && len(c.subblocks) > 0 && c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		if len(c.substmts) > 0 {
 			c.substmts[len(c.substmts)-1]--
@@ -599,7 +602,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		if c.structfield[len(c.structfield)-1][1] == 0 {
-			c.structfield = c.structfield[:len(c.structfield)-1]
+			c.structfield = c.structfield[0 : len(c.structfield)-1]
 			break
 		}
 		var variant byte = mapast.TypedIdentNormal
@@ -641,21 +644,21 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			c.skippedbalits[xx.Tag] = struct{}{}
 			c.AstTree[(o(t) + 1 + uint64(len(xx.Names)))] = []byte(xx.Tag.Value)
 		}
-		c.AstTree[t] = mapast.TypedIdent[:1+variant]
+		c.AstTree[t] = mapast.TypedIdent[0 : 1+variant]
 		c.structfield[len(c.structfield)-1][0]++
 		if c.structfield[len(c.structfield)-1][1] != 0 {
 			c.structfield[len(c.structfield)-1][1]--
 		}
 		if c.structfield[len(c.structfield)-1][1] == 0 {
-			c.structfield = c.structfield[:len(c.structfield)-1]
+			c.structfield = c.structfield[0 : len(c.structfield)-1]
 		}
 
 	case *ast.IfStmt:
 		var xx = (x).(*ast.IfStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		if _, dead := c.deadif[xx]; dead {
@@ -1021,9 +1024,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.RangeStmt:
 		var xx = (x).(*ast.RangeStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var stack []uint64
@@ -1122,9 +1125,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.ForStmt:
 		var xx = (x).(*ast.ForStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var uniform = (xx.Init == nil) && (xx.Post == nil)
@@ -1447,9 +1450,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.SwitchStmt:
 		var xx = (x).(*ast.SwitchStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var t = c.nowblock[len(c.nowblock)-1]
@@ -1631,14 +1634,19 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.TypeSwitchStmt:
 		var xx = (x).(*ast.TypeSwitchStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var t = c.nowblock[len(c.nowblock)-1]
 		c.AstTree[t] = mapast.BlocOfCodeNode(mapast.BlocOfCodeTypeSwitch, 1+2*uint64(bool2byte(xx.Init != nil)))
 		c.nowblock[len(c.nowblock)-1]++
+		for _, v := range xx.Body.List {
+			if w, ok := v.(*ast.CaseClause); ok {
+				c.typedcases[w] = struct{}{}
+			}
+		}
 		var theadcount uint64
 		var stack []uint64
 		var ident []byte
@@ -1885,9 +1893,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.CaseClause:
 		var xx = (x).(*ast.CaseClause)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var theadcount uint64 = uint64(len(xx.List))
@@ -1913,7 +1921,11 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 					c.skippedbalits[id3] = struct{}{}
 				}
 			}
-			c.AstTree[o(t)+i] = mapast.ExpressionNode(mapast.ExpressionIdentifier, 1)
+			if _, ok2 := c.typedcases[xx]; ok2 {
+				c.AstTree[o(t)+i] = mapast.RootOfType
+			} else {
+				c.AstTree[o(t)+i] = mapast.ExpressionNode(mapast.ExpressionIdentifier, 1)
+			}
 			if ok {
 				c.AstTree[o(o(t)+i)] = ident
 			} else {
@@ -1942,9 +1954,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		if zz == 0 {
 			for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-				c.substmts = c.substmts[:len(c.substmts)-1]
-				c.subblocks = c.subblocks[:len(c.subblocks)-1]
-				c.nowblock = c.nowblock[:len(c.nowblock)-1]
+				c.substmts = c.substmts[0 : len(c.substmts)-1]
+				c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+				c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 			}
 			c.subblocks[len(c.subblocks)-1]--
 			var t = c.nowblock[len(c.nowblock)-1]
@@ -1960,9 +1972,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.EmptyStmt:
 		var xx = (x).(*ast.EmptyStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		if xx.Implicit == false {
@@ -1989,9 +2001,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 
 		}
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		_ = variant
@@ -2031,9 +2043,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		id, ok := xx.X.(*ast.Ident)
@@ -2064,7 +2076,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var where = c.typefield[len(c.typefield)-1]
 		c.AstTree[where] = []byte(xx.Value)
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 
 	case *ast.SelectorExpr:
 		var xx = (x).(*ast.SelectorExpr)
@@ -2080,7 +2092,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		const ok2 = true
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionDot, 2)
 		if ok1 {
 			c.AstTree[o(where)] = ident1
@@ -2097,9 +2109,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.ReturnStmt:
 		var xx = (x).(*ast.ReturnStmt)
 		for len(c.substmts) > 0 && len(c.subblocks) > 0 && c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		if len(c.substmts) > 0 {
 			c.substmts[len(c.substmts)-1]--
@@ -2163,7 +2175,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var where = c.typefield[len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(variant, 1)
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		if ok {
 			c.AstTree[o(where)] = ident
 		} else {
@@ -2176,8 +2188,8 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		var where = c.typefield[len(c.typefield)-1]
-		c.AstTree[where] = mapast.Expression[:1+mapast.ExpressionMul : 1+mapast.ExpressionTotalCount]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.AstTree[where] = mapast.Expression[0 : 1+mapast.ExpressionMul : 1+mapast.ExpressionTotalCount]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		id, ok := xx.X.(*ast.Ident)
 		if ok {
 			c.AstTree[o(where)] = []byte(id.Name)
@@ -2198,7 +2210,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionBrackets, 1)
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		if ok {
 			c.AstTree[o(where)] = ident
 		} else {
@@ -2283,7 +2295,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(variant, 2)
 		if ok1 {
 			c.AstTree[o(where)] = ident1
@@ -2335,7 +2347,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			}
 		}
 		if len(c.typefield) > 0 {
-			c.typefield = c.typefield[:len(c.typefield)-1]
+			c.typefield = c.typefield[0 : len(c.typefield)-1]
 		}
 		c.typefield = append(c.typefield, stack...)
 
@@ -2349,9 +2361,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		id, ok := xx.X.(*ast.Ident)
@@ -2376,9 +2388,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 
 	case *ast.GoStmt:
 		for len(c.substmts) > 0 && len(c.subblocks) > 0 && c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		if len(c.substmts) > 0 {
 			c.substmts[len(c.substmts)-1]--
@@ -2392,9 +2404,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 
 	case *ast.DeferStmt:
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		var stack []uint64
@@ -2414,9 +2426,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		id1, ok1 := xx.Chan.(*ast.Ident)
@@ -2452,9 +2464,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.LabeledStmt:
 		var xx = (x).(*ast.LabeledStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		var blk = c.nowblock[len(c.nowblock)-1]
@@ -2472,9 +2484,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.substmts[len(c.substmts)-1]--
 		var variant byte
@@ -2575,7 +2587,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		_ = ident2
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionIndex, 2)
 		if ok1 {
 			c.AstTree[o(where)] = ident1
@@ -2621,7 +2633,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		_ = ident4
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		if xx.Slice3 {
 			c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionSlice, 4)
 		} else if xx.High == nil {
@@ -2635,7 +2647,11 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			stack = append([]uint64{o(where)}, stack...)
 		}
 		if ok2 {
-			c.AstTree[o(where)+1] = ident2
+			if xx.Low == nil {
+				c.AstTree[o(where)+1] = []byte("0")
+			} else {
+				c.AstTree[o(where)+1] = ident2
+			}
 		} else {
 			stack = append([]uint64{o(where) + 1}, stack...)
 		}
@@ -2684,7 +2700,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		_ = ident1
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(variant, l)
 		if xx.Len != nil {
 			if ok1 {
@@ -2717,7 +2733,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionKeyVal, 2)
 		if ok1 {
 			c.AstTree[o(where)] = ident1
@@ -2747,13 +2763,14 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		if numtypes == 1 {
 			c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionComposite, 1+uint64(len(xx.Elts)))
+			c.AstTree[o(where)] = mapast.RootOfType
 			if ok1 {
-				c.AstTree[o(where)] = ident1
+				c.AstTree[o(o(where))] = ident1
 			} else {
-				stack = append([]uint64{o(where)}, stack...)
+				stack = append([]uint64{o(o(where))}, stack...)
 			}
 		} else {
 			c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionComposed, 0+uint64(len(xx.Elts)))
@@ -2785,7 +2802,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		if xx.Type == nil {
 			c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionType, 1)
 			if ok1 {
@@ -2806,10 +2823,11 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			} else {
 				stack = append([]uint64{o(where)}, stack...)
 			}
+			c.AstTree[o(where)+1] = mapast.RootOfType
 			if ok2 {
-				c.AstTree[o(where)+1] = ident2
+				c.AstTree[o(o(where)+1)] = ident2
 			} else {
-				stack = append([]uint64{o(where) + 1}, stack...)
+				stack = append([]uint64{o(o(where) + 1)}, stack...)
 			}
 		}
 		c.typefield = append(c.typefield, stack...)
@@ -2822,7 +2840,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		_ = xx
 		var where = c.typefield[len(c.typefield)-1]
 		c.AstTree[where] = mapast.StructType
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		var fieldscount = uint64(len(xx.Fields.List))
 		if fieldscount > 0 {
 			c.structfield = append(c.structfield, [2]uint64{o(where), fieldscount})
@@ -2847,7 +2865,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		_ = ident1
 		var stack []uint64
 		var where = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(mapast.ExpressionMap, 2)
 		if ok1 {
 			c.AstTree[o(where)] = ident1
@@ -2867,7 +2885,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		var t = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		var results = 0
 		if xx.Type.Results != nil {
 			results = len(xx.Type.Results.List)
@@ -2892,7 +2910,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		_ = xx
 		var where = c.typefield[len(c.typefield)-1]
 		c.AstTree[where] = mapast.IfceTypExp
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		var stack []uint64
 		var structstack [][2]uint64
 		for i := range xx.Methods.List {
@@ -2907,7 +2925,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 				if xx.Methods.List[i].Type.(*ast.FuncType).Results != nil {
 					nrets = len(xx.Methods.List[i].Type.(*ast.FuncType).Results.List)
 				}
-				c.AstTree[o(where)+uint64(i)] = mapast.IfceMethod[:npars+1]
+				c.AstTree[o(where)+uint64(i)] = mapast.IfceMethod[0 : npars+1]
 				_ = nrets
 				structstack = append([][2]uint64{{o(o(where) + uint64(i)), uint64(1 + npars + nrets)}}, structstack...)
 
@@ -2931,9 +2949,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.SelectStmt:
 		var xx = (x).(*ast.SelectStmt)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var t = c.nowblock[len(c.nowblock)-1]
@@ -2947,9 +2965,9 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 	case *ast.CommClause:
 		var xx = (x).(*ast.CommClause)
 		for c.substmts[len(c.substmts)-1] <= 0 && c.subblocks[len(c.subblocks)-1] <= 0 {
-			c.substmts = c.substmts[:len(c.substmts)-1]
-			c.subblocks = c.subblocks[:len(c.subblocks)-1]
-			c.nowblock = c.nowblock[:len(c.nowblock)-1]
+			c.substmts = c.substmts[0 : len(c.substmts)-1]
+			c.subblocks = c.subblocks[0 : len(c.subblocks)-1]
+			c.nowblock = c.nowblock[0 : len(c.nowblock)-1]
 		}
 		c.subblocks[len(c.subblocks)-1]--
 		var t = c.nowblock[len(c.nowblock)-1]
@@ -3111,7 +3129,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 		}
 		var where = c.typefield[len(c.typefield)-1]
 		c.AstTree[where] = mapast.ExpressionNode(variant, 1)
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		if ok {
 			c.AstTree[o(where)] = ident
 		} else {
@@ -3128,7 +3146,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		var t = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		var results = 0
 		if xx.Results != nil {
 			results = len(xx.Results.List)
@@ -3148,7 +3166,7 @@ func (c *Conversion) Visit(x ast.Node) ast.Visitor {
 			break
 		}
 		var t = c.typefield[len(c.typefield)-1]
-		c.typefield = c.typefield[:len(c.typefield)-1]
+		c.typefield = c.typefield[0 : len(c.typefield)-1]
 		c.AstTree[t] = []byte("...")
 
 	default:
